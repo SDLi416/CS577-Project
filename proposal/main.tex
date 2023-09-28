@@ -1,0 +1,59 @@
+% CVPR 2024 Paper Template; see https://github.com/cvpr-org/author-kit
+
+\documentclass[10pt,twocolumn,letterpaper]{article}
+
+%%%%%%%%% PAPER TYPE  - PLEASE UPDATE FOR FINAL VERSION
+\usepackage{cvpr}              % To produce the CAMERA-READY version
+% \usepackage[review]{cvpr}      % To produce the REVIEW version
+% \usepackage[pagenumbers]{cvpr} % To force page numbers, e.g. for an arXiv version
+% Import additional packages in the preamble file, before hyperref
+\input{preamble}
+
+% It is strongly recommended to use hyperref, especially for the review version.
+% hyperref with option pagebackref eases the reviewers' job.
+% Please disable hyperref *only* if you encounter grave issues, 
+% e.g. with the file validation for the camera-ready version.
+%
+% If you comment hyperref and then uncomment it, you should delete *.aux before re-running LaTeX.
+% (Or just hit 'q' on the first LaTeX run, let it finish, and you should be clear).
+\definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
+\usepackage[pagebackref,breaklinks,colorlinks,citecolor=cvprblue]{hyperref}
+
+%%%%%%%%% PAPER ID  - PLEASE UPDATE
+\def\paperID{*****} % *** Enter the Paper ID here
+\def\confName{CVPR}
+\def\confYear{2024}
+
+%%%%%%%%% TITLE - PLEASE UPDATE
+\title{Fusion Modeling \& Knowledge Distillation Optimization for Video-Based Cardiac Monitoring}
+
+%%%%%%%%% AUTHORS - PLEASE UPDATE
+\author{Wang Kang\\
+ID: A20500653\\
+{\tt\small wkang10@hawk.iit.edu}
+\and
+Junhui Zhan\\
+ID: A20499169\\
+{\tt\small jzhan4@hawk.iit.edu}
+\and
+Sidi Li\\
+ID: A20479715\\
+{\tt\small sli178@hawk.iit.edu}
+}
+
+\begin{document}
+\maketitle
+\input{sec/0_problem_desc}
+\input{sec/1_brief_survey}
+\input{sec/2_preliminary_plan}
+\input{sec/3_reference}
+{
+    \small
+    \bibliographystyle{ieeenat_fullname}
+    \bibliography{main}
+}
+
+% WARNING: do not forget to delete the supplementary pages from your submission 
+% \input{sec/X_suppl}
+
+\end{document}
