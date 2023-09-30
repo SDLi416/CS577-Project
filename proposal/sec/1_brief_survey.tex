@@ -1,5 +1,9 @@
 \section{Brief Survey}
 \label{sec:intro}
 
-what have been done and how the proposed work is
-different.
+Discrepancies observed during ejection fraction assessments are partially due to common heart rate irregularities and computational challenges associated with manually tracking ventricular size for each beat. Additionally, physiological differences age, chest size, working and living environments, as well as behavioral habits contribute to variations in the basic contour of the heart even when examining individuals with normal physiological functions. Furthermore, different angles used during testing by non-cardiologists utilizing point-of-care ultrasound can significantly impact results.
+
+Even after extensive training, physicians may still exhibit substantial divergent biases or omissions when assessing emergencies or rare diseases. Such discrepancies pose potential dangers alike. Therefore, there is an urgent need for rapid, efficient, cost-effective, accurate, reproducible, and quantifiable methods for assessing cardiac function.
+
+\section{Proposed work}
+The acquisition of echocardiographic images is rapid, cost-effective, and free from ionizing radiation, making it the most widely utilized modality in cardiovascular imaging. To address this challenge, we propose "Fusion Modeling \& Knowledge Distillation Optimization," which leverages a video-based deep learning algorithm called EchoNet-Dynamic. This approach combines feature extraction using multiple models (employing a window-based attention mechanism with multiple convolutional networks) and surpasses human experts in critical tasks such as left ventricle segmentation and ejection fraction estimation while significantly reducing computational requirements. It is user-friendly, requires minimal or no parameter tuning, and can be executed efficiently on personal computers. Future prospects include extending its application to detect and monitor other organs, tissues, and body behaviors through video analysis to enhance auxiliary clinical diagnosis, treatment planning, and risk assessment.
