@@ -1,0 +1,19 @@
+# LaTeX build files
+*.aux
+*.log
+*.out
+*.toc
+*.lof
+*.lot
+*.bbl
+*.blg
+*.synctex.gz
+*.dvi
+*.fdb_latexmk
+*.fls
+
+# Ignore PDF files (if you generate PDFs)
+*.pdf
+
+# Ignore temporary Vim files (if you use Vim)
+*.swp
