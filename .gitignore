@@ -1,3 +1,4 @@
+
 # LaTeX build files
 *.aux
 *.log
@@ -17,3 +18,6 @@
 
 # Ignore temporary Vim files (if you use Vim)
 *.swp
+
+output*/
+a4c-video-dir/
