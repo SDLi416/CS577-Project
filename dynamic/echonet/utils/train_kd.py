@@ -20,13 +20,15 @@ def run_train_kd(
     f,
 ):
     scheduler = torch.optim.lr_scheduler.StepLR(optim, lr_step_period)
+    checkpoint_path = os.path.join(output, "checkpoint.distill.pt")
+    best_path = os.path.join(output, "best.distill.pt")
 
     # with open(os.path.join(output, "log.distill.csv"), "a") as f:
     epoch_resume = 0
     bestLoss = float("inf")
     try:
         # Attempt to load checkpoint
-        checkpoint = torch.load(os.path.join(output, "checkpoint.distill.pt"))
+        checkpoint = torch.load(checkpoint_path)
         student.load_state_dict(checkpoint["state_dict"])
         optim.load_state_dict(checkpoint["opt_dict"])
         scheduler.load_state_dict(checkpoint["scheduler_dict"])
@@ -36,6 +38,7 @@ def run_train_kd(
     except FileNotFoundError:
         f.write("Starting run from scratch\n")
 
+    print("run train kd: -------------------->", epoch_resume, num_epochs)
     for epoch in range(epoch_resume, num_epochs):
         print("Epoch #{}".format(epoch), flush=True)
 
@@ -97,4 +100,17 @@ def run_train_kd(
             f.flush()
             scheduler.step()
 
-        print(bestLoss)
+        # print(bestLoss)
+        # Save checkpoint
+        save = {
+            "epoch": epoch,
+            "state_dict": student.state_dict(),
+            "best_loss": bestLoss,
+            "loss": loss,
+            "opt_dict": optim.state_dict(),
+            "scheduler_dict": scheduler.state_dict(),
+        }
+        torch.save(save, checkpoint_path)
+        if loss < bestLoss:
+            torch.save(save, best_path)
+            bestLoss = loss

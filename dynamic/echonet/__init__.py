@@ -12,6 +12,8 @@ import echonet.datasets as datasets
 import echonet.utils as utils
 # import echonet.distill as distill
 
+from . import models
+
 
 @click.group()
 def main():
@@ -24,4 +26,4 @@ del click
 main.add_command(utils.segmentation.run)
 main.add_command(utils.video.run)
 
-__all__ = ["__version__", "config", "datasets", "main", "utils"]
+__all__ = ["__version__", "config", "datasets", "main", "utils", "models"]

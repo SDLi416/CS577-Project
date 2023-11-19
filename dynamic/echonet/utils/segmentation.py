@@ -12,6 +12,8 @@ import torch
 import torchvision
 import tqdm
 
+# from torchinfo import summary
+
 import echonet
 from .train_kd import run_train_kd
 
@@ -124,16 +126,24 @@ def run(
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Set up model
+    # (4): Conv2d(256, 21, kernel_size=(1, 1), stride=(1, 1))
+    # (4): Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
     model = torchvision.models.segmentation.__dict__[model_name](
         weights="DEFAULT" if pretrained else None,
         aux_loss=True if pretrained else False,
     )
+    # summary(model, input_size=(batch_size, 3, 112, 112), depth=5)
+    # print(model)
 
     model.classifier[-1] = torch.nn.Conv2d(
         model.classifier[-1].in_channels,
         1,
         kernel_size=model.classifier[-1].kernel_size,
     )  # change number of outputs to 1
+    print("model classifier last layer changed")
+    # summary(model, input_size=(batch_size, 3, 112, 112), depth=5)
+    # print(model)
+
     if device.type == "cuda":
         model = torch.nn.DataParallel(model)
     model.to(device)
@@ -205,7 +215,6 @@ def run(
         # batch_size = 16
 
         # print(model)
-        # summary(model, input_size=(batch_size, 3, 112, 112), depth=4)
         # print(f)
 
         # ds = echonet.datasets.Echo(root=data_dir, split="train", **kwargs)
@@ -218,7 +227,18 @@ def run(
         # )
 
         # TODO
-        student = model
+        student = echonet.models.deeplabv3_restnet50(
+            num_classes=7, aux_loss=True if pretrained else False
+        )
+
+        if device.type == "cuda":
+            student = torch.nn.DataParallel(student)
+        student.to(device)
+        # summary(model, input_size=(batch_size, 3, 112, 112), depth=5)
+        # print("-----------------------\n\n")
+        # summary(student, input_size=(batch_size, 3, 112, 112), depth=5)
+
+        # print(student)
         with open(os.path.join(output, "log.distill.csv"), "a") as f:
             print("KD run train")
             run_train_kd(
