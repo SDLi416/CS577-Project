@@ -33,7 +33,6 @@ def run_train_kd(
         dataset["train"] = torch.utils.data.Subset(dataset["train"], indices)
     dataset["val"] = echonet.datasets.Echo(root=data_dir, split="val", **kwargs)
 
-    # scheduler = torch.optim.lr_scheduler.StepLR(optim, lr_step_period)
     checkpoint_path = os.path.join(output, "checkpoint.distill.pt")
     best_path = os.path.join(output, "best.distill.pt")
 
@@ -79,8 +78,6 @@ def run_train_kd(
             ) = run_epoch_kd(
                 teacher, student, dataloader, phase == "train", optim, device
             )
-
-            # print("xxx..........>>>>", loss)
 
             overall_dice = (
                 2

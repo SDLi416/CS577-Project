@@ -15,9 +15,9 @@ def run_epoch_kd(
     train,
     optim,
     device,
-    T=2,
-    soft_target_loss_weight=0.25,
-    ce_loss_weight=0.75,
+    # T=2,
+    # soft_target_loss_weight=0.25,
+    # ce_loss_weight=0.75,
 ):
     total = 0.0
     n = 0
@@ -67,9 +67,6 @@ def run_epoch_kd(
             large_frame = large_frame.to(device)
             large_trace = large_trace.to(device)
             y_large = student(large_frame)["out"]
-            loss_large = torch.nn.functional.binary_cross_entropy_with_logits(
-                y_large[:, 0, :, :], large_trace, reduction="sum"
-            )
 
             # Compute pixel intersection and union between human and computer segmentations
             large_inter += np.logical_and(
@@ -97,9 +94,7 @@ def run_epoch_kd(
             small_frame = small_frame.to(device)
             small_trace = small_trace.to(device)
             y_small = student(small_frame)["out"]
-            loss_small = torch.nn.functional.binary_cross_entropy_with_logits(
-                y_small[:, 0, :, :], small_trace, reduction="sum"
-            )
+
             # Compute pixel intersection and union between human and computer segmentations
             small_inter += np.logical_and(
                 y_small[:, 0, :, :].detach().cpu().numpy() > 0.0,
@@ -122,47 +117,9 @@ def run_epoch_kd(
                 ).sum((1, 2))
             )
 
-            # Take gradient step if training
-            loss = (loss_large + loss_small) / 2
-
             with torch.no_grad():
                 teacher_y_large = teacher(large_frame)["out"]
                 teacher_y_small = teacher(small_frame)["out"]
-
-            # soft_targets_large = nn.functional.softmax(
-            #     teacher_y_large[:, 0, :, :] / T, dim=-1
-            # )
-            # soft_prob_large = nn.functional.log_softmax(y_large[:, 0, :, :] / T, dim=-1)
-            # soft_targets_loss_large = (
-            #     -torch.sum(soft_targets_large * soft_prob_large)
-            #     / soft_prob_large.size()[0]
-            #     * (T**2)
-            # )
-            # print(soft_targets_loss_large)
-
-            # soft_targets_small = nn.functional.softmax(
-            #     teacher_y_small[:, 0, :, :] / T, dim=-1
-            # )
-            # soft_prob_small = nn.functional.log_softmax(y_small[:, 0, :, :] / T, dim=-1)
-            # soft_targets_loss_small = (
-            #     -torch.sum(soft_targets_small * soft_prob_small)
-            #     / soft_prob_small.size()[0]
-            #     * (T**2)
-            # )
-            # print(soft_targets_loss_small)
-
-            # loss_large_kd = (
-            #     soft_target_loss_weight * soft_targets_loss_large
-            #     + ce_loss_weight * loss_large
-            # )
-            # print(loss_large_kd)
-
-            # loss_small_kd = (
-            #     soft_target_loss_weight * soft_targets_loss_small
-            #     + ce_loss_weight * loss_small
-            # )
-            # print(loss_small_kd)
-            # loss_kd = (loss_large_kd + loss_small_kd) / 2
 
             kd_loss_large = kd_loss_func(
                 y_large[:, 0, :, :], teacher_y_large[:, 0, :, :], large_trace
@@ -171,9 +128,9 @@ def run_epoch_kd(
                 y_small[:, 0, :, :], teacher_y_small[:, 0, :, :], small_trace
             )
             loss_kd = (kd_loss_large + kd_loss_small) / 2
-            # print("loss_kd ---------------->", loss_kd)
-            # print(kd_loss_large)
+            # loss = (loss_large + loss_small) / 2
 
+            # Take gradient step if training
             if train:
                 optim.zero_grad()
                 # loss.backward()
