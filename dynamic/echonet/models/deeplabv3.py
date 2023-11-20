@@ -1,5 +1,7 @@
 import torch
 from typing import Any, Optional
+import torchvision
+
 from torchvision.models import resnet
 from torchvision.models._utils import IntermediateLayerGetter
 from torchvision.models.segmentation import deeplabv3
@@ -9,6 +11,18 @@ from torchvision.models.segmentation.fcn import FCNHead
 def deeplabv3_restnet50(
     num_classes: Optional[int] = None, aux_loss: Optional[bool] = None
 ) -> deeplabv3.DeepLabV3:
+    model = torchvision.models.segmentation.deeplabv3_resnet101(
+        weights=None,
+        aux_loss=False,
+    )
+    model.classifier[-1] = torch.nn.Conv2d(
+        model.classifier[-1].in_channels,
+        1,
+        kernel_size=model.classifier[-1].kernel_size,
+    )  # change number of outputs to 1
+    return model
+
+    # return torchvision.models.segmentation.deeplabv3_restnet101()
     # backbone = resnet.resnet18(weights=None)
     backbone = resnet50(replace_stride_with_dilation=[False, True, True])
 
@@ -26,7 +40,8 @@ def deeplabv3_restnet50(
 
 
 def resnet50(**kwargs: Any) -> resnet.ResNet:
-    model = resnet.ResNet(resnet.Bottleneck, [1, 2, 3, 1], **kwargs)
+    model = resnet.ResNet(resnet.Bottleneck, [3, 4, 6, 3], **kwargs)
+    # model = resnet.ResNet(resnet.Bottleneck, [1, 2, 3, 1], **kwargs)
     return model
 
 

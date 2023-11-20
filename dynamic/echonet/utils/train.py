@@ -1,22 +1,37 @@
 import os
 import time
 import torch
+import numpy as np
 
+from .epoch import run_epoch
 import echonet
 
 
 def run_train(
-    output,
     model,
     optim,
     scheduler,
-    dataset,
     batch_size,
     num_workers,
     num_epochs,
     device,
+    kwargs,
+    num_train_patients,
+    data_dir,
+    output,
     f,
 ):
+    # Set up datasets and dataloaders
+    dataset = {}
+    dataset["train"] = echonet.datasets.Echo(root=data_dir, split="train", **kwargs)
+    if num_train_patients is not None and len(dataset["train"]) > num_train_patients:
+        # Subsample patients (used for ablation experiment)
+        indices = np.random.choice(
+            len(dataset["train"]), num_train_patients, replace=False
+        )
+        dataset["train"] = torch.utils.data.Subset(dataset["train"], indices)
+    dataset["val"] = echonet.datasets.Echo(root=data_dir, split="val", **kwargs)
+
     # with open(os.path.join(output, "log.csv"), "a") as f:
     epoch_resume = 0
     bestLoss = float("inf")
@@ -55,9 +70,7 @@ def run_train(
                 large_union,
                 small_inter,
                 small_union,
-            ) = echonet.utils.run_epoch(
-                model, dataloader, phase == "train", optim, device
-            )
+            ) = run_epoch(model, dataloader, phase == "train", optim, device)
             overall_dice = (
                 2
                 * (large_inter.sum() + small_inter.sum())

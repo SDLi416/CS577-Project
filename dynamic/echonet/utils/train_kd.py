@@ -1,25 +1,39 @@
 import os
 import torch
 import time
+import numpy as np
 from .epoch_kd import run_epoch_kd
 
+import echonet
 
-# echonet.distill.train(output, model, dataloader, optim, device)
+
 def run_train_kd(
-    output,
     teacher,
     student,
     optim,
-    dataset,
+    scheduler,
     batch_size,
     num_workers,
     num_epochs,
-    # dataloader,
-    lr_step_period,
     device,
+    kwargs,
+    num_train_patients,
+    data_dir,
+    output,
     f,
 ):
-    scheduler = torch.optim.lr_scheduler.StepLR(optim, lr_step_period)
+    # Set up datasets and dataloaders
+    dataset = {}
+    dataset["train"] = echonet.datasets.Echo(root=data_dir, split="train", **kwargs)
+    if num_train_patients is not None and len(dataset["train"]) > num_train_patients:
+        # Subsample patients (used for ablation experiment)
+        indices = np.random.choice(
+            len(dataset["train"]), num_train_patients, replace=False
+        )
+        dataset["train"] = torch.utils.data.Subset(dataset["train"], indices)
+    dataset["val"] = echonet.datasets.Echo(root=data_dir, split="val", **kwargs)
+
+    # scheduler = torch.optim.lr_scheduler.StepLR(optim, lr_step_period)
     checkpoint_path = os.path.join(output, "checkpoint.distill.pt")
     best_path = os.path.join(output, "best.distill.pt")
 
@@ -62,7 +76,11 @@ def run_train_kd(
                 large_union,
                 small_inter,
                 small_union,
-            ) = run_epoch_kd(teacher, student, dataloader, optim, device)
+            ) = run_epoch_kd(
+                teacher, student, dataloader, phase == "train", optim, device
+            )
+
+            # print("xxx..........>>>>", loss)
 
             overall_dice = (
                 2
@@ -100,8 +118,8 @@ def run_train_kd(
             f.flush()
             scheduler.step()
 
-        # print(bestLoss)
         # Save checkpoint
+
         save = {
             "epoch": epoch,
             "state_dict": student.state_dict(),

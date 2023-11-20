@@ -1,15 +1,18 @@
 import torch
-import torch.nn as nn
 
 import math
 import numpy as np
 import tqdm
+
+# from .losses import DistillationMSELoss
+from .losses import DistillationKLDivLoss
 
 
 def run_epoch_kd(
     teacher,
     student,
     dataloader,
+    train,
     optim,
     device,
     T=2,
@@ -35,14 +38,19 @@ def run_epoch_kd(
     small_inter_list = []
     small_union_list = []
 
+    kd_loss_func = DistillationKLDivLoss()
+
     teacher.eval()
-    student.train()
+    if train:
+        student.train()
+    else:
+        student.eval()
+
+    print("run_epoch_kd ------------------>")
 
     # with torch.set_grad_enabled(train):
     with tqdm.tqdm(total=len(dataloader)) as pbar:
         for _, (large_frame, small_frame, large_trace, small_trace) in dataloader:
-            optim.zero_grad()
-
             # Count number of pixels in/out of human segmentation
             pos += (large_trace == 1).sum().item()
             pos += (small_trace == 1).sum().item()
@@ -62,6 +70,7 @@ def run_epoch_kd(
             loss_large = torch.nn.functional.binary_cross_entropy_with_logits(
                 y_large[:, 0, :, :], large_trace, reduction="sum"
             )
+
             # Compute pixel intersection and union between human and computer segmentations
             large_inter += np.logical_and(
                 y_large[:, 0, :, :].detach().cpu().numpy() > 0.0,
@@ -114,51 +123,62 @@ def run_epoch_kd(
             )
 
             # Take gradient step if training
-            # loss = (loss_large + loss_small) / 2
+            loss = (loss_large + loss_small) / 2
 
             with torch.no_grad():
                 teacher_y_large = teacher(large_frame)["out"]
                 teacher_y_small = teacher(small_frame)["out"]
 
-            soft_targets_large = nn.functional.softmax(
-                teacher_y_large[:, 0, :, :] / T, dim=-1
-            )
-            soft_prob_large = nn.functional.log_softmax(y_large[:, 0, :, :] / T, dim=-1)
-            soft_targets_loss_large = (
-                -torch.sum(soft_targets_large * soft_prob_large)
-                / soft_prob_large.size()[0]
-                * (T**2)
-            )
+            # soft_targets_large = nn.functional.softmax(
+            #     teacher_y_large[:, 0, :, :] / T, dim=-1
+            # )
+            # soft_prob_large = nn.functional.log_softmax(y_large[:, 0, :, :] / T, dim=-1)
+            # soft_targets_loss_large = (
+            #     -torch.sum(soft_targets_large * soft_prob_large)
+            #     / soft_prob_large.size()[0]
+            #     * (T**2)
+            # )
             # print(soft_targets_loss_large)
 
-            soft_targets_small = nn.functional.softmax(
-                teacher_y_small[:, 0, :, :] / T, dim=-1
-            )
-            soft_prob_small = nn.functional.log_softmax(y_small[:, 0, :, :] / T, dim=-1)
-            soft_targets_loss_small = (
-                -torch.sum(soft_targets_small * soft_prob_small)
-                / soft_prob_small.size()[0]
-                * (T**2)
-            )
+            # soft_targets_small = nn.functional.softmax(
+            #     teacher_y_small[:, 0, :, :] / T, dim=-1
+            # )
+            # soft_prob_small = nn.functional.log_softmax(y_small[:, 0, :, :] / T, dim=-1)
+            # soft_targets_loss_small = (
+            #     -torch.sum(soft_targets_small * soft_prob_small)
+            #     / soft_prob_small.size()[0]
+            #     * (T**2)
+            # )
             # print(soft_targets_loss_small)
 
-            loss_large_kd = (
-                soft_target_loss_weight * soft_targets_loss_large
-                + ce_loss_weight * loss_large
-            )
+            # loss_large_kd = (
+            #     soft_target_loss_weight * soft_targets_loss_large
+            #     + ce_loss_weight * loss_large
+            # )
             # print(loss_large_kd)
 
-            loss_small_kd = (
-                soft_target_loss_weight * soft_targets_loss_small
-                + ce_loss_weight * loss_small
-            )
+            # loss_small_kd = (
+            #     soft_target_loss_weight * soft_targets_loss_small
+            #     + ce_loss_weight * loss_small
+            # )
             # print(loss_small_kd)
-            loss_kd = (loss_large_kd + loss_small_kd) / 2
+            # loss_kd = (loss_large_kd + loss_small_kd) / 2
 
-            # optim.zero_grad()
-            # loss.backward()
-            loss_kd.backward()
-            optim.step()
+            kd_loss_large = kd_loss_func(
+                y_large[:, 0, :, :], teacher_y_large[:, 0, :, :], large_trace
+            )
+            kd_loss_small = kd_loss_func(
+                y_small[:, 0, :, :], teacher_y_small[:, 0, :, :], small_trace
+            )
+            loss_kd = (kd_loss_large + kd_loss_small) / 2
+            # print("loss_kd ---------------->", loss_kd)
+            # print(kd_loss_large)
+
+            if train:
+                optim.zero_grad()
+                # loss.backward()
+                loss_kd.backward()
+                optim.step()
 
             # Accumulate losses and compute baselines
             total += loss_kd.item()

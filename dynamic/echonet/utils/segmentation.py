@@ -12,10 +12,11 @@ import torch
 import torchvision
 import tqdm
 
+from .train_kd import run_train_kd
+
 # from torchinfo import summary
 
 import echonet
-from .train_kd import run_train_kd
 
 
 @click.command("segmentation")
@@ -167,29 +168,20 @@ def run(
     tasks = ["LargeFrame", "SmallFrame", "LargeTrace", "SmallTrace"]
     kwargs = {"target_type": tasks, "mean": mean, "std": std}
 
-    # Set up datasets and dataloaders
-    dataset = {}
-    dataset["train"] = echonet.datasets.Echo(root=data_dir, split="train", **kwargs)
-    if num_train_patients is not None and len(dataset["train"]) > num_train_patients:
-        # Subsample patients (used for ablation experiment)
-        indices = np.random.choice(
-            len(dataset["train"]), num_train_patients, replace=False
-        )
-        dataset["train"] = torch.utils.data.Subset(dataset["train"], indices)
-    dataset["val"] = echonet.datasets.Echo(root=data_dir, split="val", **kwargs)
-
     # Run training and testing loops
     with open(os.path.join(output, "log.csv"), "a") as f:
         echonet.utils.run_train(
-            output,
             model,
             optim,
             scheduler,
-            dataset,
             batch_size,
             num_workers,
             num_epochs,
             device,
+            kwargs,
+            num_train_patients,
+            data_dir,
+            output,
             f,
         )
 
@@ -206,7 +198,7 @@ def run(
         if run_test:
             # Run on validation and test
             echonet.utils.run_test(
-                model, device, data_dir, output, num_workers, batch_size, kwargs, f
+                model, batch_size, num_workers, device, kwargs, data_dir, output, f
             )
 
     if run_distill:
@@ -234,6 +226,25 @@ def run(
         if device.type == "cuda":
             student = torch.nn.DataParallel(student)
         student.to(device)
+
+        # Set up optimizer
+        optim = torch.optim.SGD(
+            student.parameters(), lr=lr, momentum=0.9, weight_decay=weight_decay
+        )
+        if lr_step_period is None:
+            lr_step_period = math.inf
+        scheduler = torch.optim.lr_scheduler.StepLR(optim, lr_step_period)
+
+        # student = torchvision.models.segmentation.__dict__[model_name](
+        #     weights=None,
+        #     aux_loss=False,
+        # )
+        # student.classifier[-1] = torch.nn.Conv2d(
+        #     student.classifier[-1].in_channels,
+        #     1,
+        #     kernel_size=student.classifier[-1].kernel_size,
+        # )  # change number of outputs to 1
+
         # summary(model, input_size=(batch_size, 3, 112, 112), depth=5)
         # print("-----------------------\n\n")
         # summary(student, input_size=(batch_size, 3, 112, 112), depth=5)
@@ -242,30 +253,42 @@ def run(
         with open(os.path.join(output, "log.distill.csv"), "a") as f:
             print("KD run train")
             run_train_kd(
-                output,
                 model,
                 student,
                 optim,
-                dataset,
+                scheduler,
                 batch_size,
                 num_workers,
                 num_epochs,
-                # dataloader,
-                lr_step_period,
                 device,
+                kwargs,
+                num_train_patients,
+                data_dir,
+                output,
                 f,
             )
+
+            # Load best weights
+            if num_epochs != 0:
+                checkpoint = torch.load(os.path.join(output, "best.distill.pt"))
+                student.load_state_dict(checkpoint["state_dict"])
+                f.write(
+                    "Distill Best validation loss {} from epoch {}\n".format(
+                        checkpoint["loss"], checkpoint["epoch"]
+                    )
+                )
+
             if run_test:
                 # Run on validation and test
                 print("KD run test")
                 echonet.utils.run_test(
                     student,
+                    batch_size,
+                    num_workers,
                     device,
+                    kwargs,
                     data_dir,
                     output,
-                    num_workers,
-                    batch_size,
-                    kwargs,
                     f,
                 )
         # echonet.distill.train_epoch_kd(model, model, dataloader, optim, device)

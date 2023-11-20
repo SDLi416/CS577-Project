@@ -4,7 +4,8 @@ import echonet
 import numpy as np
 
 
-def run_test(model, device, data_dir, output, num_workers, batch_size, kwargs, f):
+# def run_test(model, device, data_dir, output, num_workers, batch_size, kwargs, f):
+def run_test(model, batch_size, num_workers, device, kwargs, data_dir, output, f):
     print("------------------------------------> run test")
     for split in ["val", "test"]:
         dataset = echonet.datasets.Echo(root=data_dir, split=split, **kwargs)
