@@ -127,14 +127,10 @@ def run(
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Set up model
-    # (4): Conv2d(256, 21, kernel_size=(1, 1), stride=(1, 1))
-    # (4): Conv2d(256, 1, kernel_size=(1, 1), stride=(1, 1))
     model = torchvision.models.segmentation.__dict__[model_name](
         weights="DEFAULT" if pretrained else None,
         aux_loss=True if pretrained else False,
     )
-    # summary(model, input_size=(batch_size, 3, 112, 112), depth=5)
-    # print(model)
 
     model.classifier[-1] = torch.nn.Conv2d(
         model.classifier[-1].in_channels,
@@ -142,8 +138,6 @@ def run(
         kernel_size=model.classifier[-1].kernel_size,
     )  # change number of outputs to 1
     print("model classifier last layer changed")
-    # summary(model, input_size=(batch_size, 3, 112, 112), depth=5)
-    # print(model)
 
     if device.type == "cuda":
         model = torch.nn.DataParallel(model)
@@ -202,23 +196,6 @@ def run(
             )
 
     if run_distill:
-        # with open(os.path.join(output, "log.distill.csv"), "a") as f:
-        # debug ================================
-        # batch_size = 16
-
-        # print(model)
-        # print(f)
-
-        # ds = echonet.datasets.Echo(root=data_dir, split="train", **kwargs)
-        # dataloader = torch.utils.data.DataLoader(
-        #     ds,
-        #     batch_size=batch_size,
-        #     num_workers=num_workers,
-        #     shuffle=False,
-        #     pin_memory=(device.type == "cuda"),
-        # )
-
-        # TODO
         student = echonet.models.deeplabv3_restnet50(
             num_classes=7, aux_loss=True if pretrained else False
         )
@@ -235,21 +212,6 @@ def run(
             lr_step_period = math.inf
         scheduler = torch.optim.lr_scheduler.StepLR(optim, lr_step_period)
 
-        # student = torchvision.models.segmentation.__dict__[model_name](
-        #     weights=None,
-        #     aux_loss=False,
-        # )
-        # student.classifier[-1] = torch.nn.Conv2d(
-        #     student.classifier[-1].in_channels,
-        #     1,
-        #     kernel_size=student.classifier[-1].kernel_size,
-        # )  # change number of outputs to 1
-
-        # summary(model, input_size=(batch_size, 3, 112, 112), depth=5)
-        # print("-----------------------\n\n")
-        # summary(student, input_size=(batch_size, 3, 112, 112), depth=5)
-
-        # print(student)
         with open(os.path.join(output, "log.distill.csv"), "a") as f:
             print("KD run train")
             run_train_kd(
@@ -291,21 +253,6 @@ def run(
                     output,
                     f,
                 )
-        # echonet.distill.train_epoch_kd(model, model, dataloader, optim, device)
-
-        # for _, (large_frame, small_frame, large_trace, small_trace) in dataloader:
-        #     print(
-        #         "------------------->",
-        #         large_frame.shape,
-        #         small_frame.shape,
-        #         large_trace.shape,
-        #         small_trace.shape,
-        #     )
-        #     out = model(large_frame)
-        #     # print(out)
-        #     print(out["out"].shape)
-        #     break
-        # end debug ================================
 
     # Saving videos with segmentations
     dataset = echonet.datasets.Echo(
