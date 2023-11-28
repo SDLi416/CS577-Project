@@ -12,6 +12,8 @@ import torch
 import torchvision
 import tqdm
 
+from echonet.models.fusion_model import FusionModel
+
 from .train_kd import run_train_kd
 
 # from torchinfo import summary
@@ -32,6 +34,7 @@ import echonet
             and not name.startswith("__")
             and callable(torchvision.models.segmentation.__dict__[name])
         )
+        + ["fusion"]
     ),
     default="deeplabv3_resnet50",
 )
@@ -127,10 +130,14 @@ def run(
         device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
     # Set up model
-    model = torchvision.models.segmentation.__dict__[model_name](
-        weights="DEFAULT" if pretrained else None,
-        aux_loss=True if pretrained else False,
-    )
+    model = None
+    if model_name == "fusion":
+        model = FusionModel()
+    else:
+        model = torchvision.models.segmentation.__dict__[model_name](
+            weights="DEFAULT" if pretrained else None,
+            aux_loss=True if pretrained else False,
+        )
 
     model.classifier[-1] = torch.nn.Conv2d(
         model.classifier[-1].in_channels,

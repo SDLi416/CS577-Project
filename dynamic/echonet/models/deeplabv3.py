@@ -11,7 +11,7 @@ from torchvision.models.segmentation.fcn import FCNHead
 def deeplabv3_restnet50(
     num_classes: Optional[int] = None, aux_loss: Optional[bool] = None
 ) -> deeplabv3.DeepLabV3:
-    model = torchvision.models.segmentation.deeplabv3_resnet101(
+    model = torchvision.models.segmentation.deeplabv3_resnet50(
         weights=None,
         aux_loss=False,
     )
