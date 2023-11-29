@@ -13,6 +13,7 @@ import torchvision
 import tqdm
 
 from echonet.models.fusion_model import FusionModel
+from echonet.models.resnet18_model import ResNet18Model
 
 from .train_kd import run_train_kd
 
@@ -203,9 +204,11 @@ def run(
             )
 
     if run_distill:
-        student = echonet.models.deeplabv3_restnet50(
-            num_classes=7, aux_loss=True if pretrained else False
-        )
+        # student = echonet.models.deeplabv3_restnet50(
+        #     num_classes=7, aux_loss=True if pretrained else False
+        # )
+        # student = echonet.models.restnet50()
+        student = ResNet18Model()
 
         if device.type == "cuda":
             student = torch.nn.DataParallel(student)

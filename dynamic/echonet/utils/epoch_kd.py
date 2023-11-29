@@ -67,6 +67,8 @@ def run_epoch_kd(
             large_frame = large_frame.to(device)
             large_trace = large_trace.to(device)
             y_large = student(large_frame)["out"]
+            # print("xxxx-xx-x-", y_large.shape)
+            # print(y_large)
 
             # Compute pixel intersection and union between human and computer segmentations
             large_inter += np.logical_and(
