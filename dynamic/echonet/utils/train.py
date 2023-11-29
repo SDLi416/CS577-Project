@@ -37,6 +37,7 @@ def run_train(
     bestLoss = float("inf")
     try:
         # Attempt to load checkpoint
+        print("---------------------->", output)
         checkpoint = torch.load(os.path.join(output, "checkpoint.pt"))
         model.load_state_dict(checkpoint["state_dict"])
         optim.load_state_dict(checkpoint["opt_dict"])

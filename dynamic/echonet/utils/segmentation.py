@@ -11,9 +11,12 @@ import skimage.draw
 import torch
 import torchvision
 import tqdm
+from echonet.models.fusion_conv_model import FusionConvModel
 
 from echonet.models.fusion_model import FusionModel
 from echonet.models.resnet18_model import ResNet18Model
+from echonet.models.resnet34_model import ResNet34Model
+from echonet.models.resnet50_model import ResNet50Model
 
 from .train_kd import run_train_kd
 
@@ -35,7 +38,7 @@ import echonet
             and not name.startswith("__")
             and callable(torchvision.models.segmentation.__dict__[name])
         )
-        + ["fusion"]
+        + ["fusion", "fusion_conv"]
     ),
     default="deeplabv3_resnet50",
 )
@@ -52,7 +55,7 @@ import echonet
 @click.option("--batch_size", type=int, default=20)
 @click.option("--device", type=str, default=None)
 @click.option("--seed", type=int, default=0)
-@click.option("--run_distill/--skip_distill", default=False)
+@click.option("--distill_model", default="")
 def run(
     data_dir=None,
     output=None,
@@ -70,7 +73,7 @@ def run(
     batch_size=20,
     device=None,
     seed=0,
-    run_distill=False,
+    distill_model="",
 ):
     """Trains/tests segmentation model.
 
@@ -134,17 +137,19 @@ def run(
     model = None
     if model_name == "fusion":
         model = FusionModel()
+    elif model_name == "fusion_conv":
+        model = FusionConvModel()
     else:
         model = torchvision.models.segmentation.__dict__[model_name](
             weights="DEFAULT" if pretrained else None,
             aux_loss=True if pretrained else False,
         )
+        model.classifier[-1] = torch.nn.Conv2d(
+            model.classifier[-1].in_channels,
+            1,
+            kernel_size=model.classifier[-1].kernel_size,
+        )  # change number of outputs to 1
 
-    model.classifier[-1] = torch.nn.Conv2d(
-        model.classifier[-1].in_channels,
-        1,
-        kernel_size=model.classifier[-1].kernel_size,
-    )  # change number of outputs to 1
     print("model classifier last layer changed")
 
     if device.type == "cuda":
@@ -203,12 +208,20 @@ def run(
                 model, batch_size, num_workers, device, kwargs, data_dir, output, f
             )
 
-    if run_distill:
+    if distill_model != "":
         # student = echonet.models.deeplabv3_restnet50(
         #     num_classes=7, aux_loss=True if pretrained else False
         # )
         # student = echonet.models.restnet50()
-        student = ResNet18Model()
+        student = None
+        if distill_model == "resnet18":
+            student = ResNet18Model()
+        elif distill_model == "resnet34":
+            student = ResNet34Model()
+        elif distill_model == "resnet50":
+            student = ResNet50Model()
+        else:
+            raise Exception("Unknown distillation model", distill_model)
 
         if device.type == "cuda":
             student = torch.nn.DataParallel(student)
@@ -222,7 +235,8 @@ def run(
             lr_step_period = math.inf
         scheduler = torch.optim.lr_scheduler.StepLR(optim, lr_step_period)
 
-        with open(os.path.join(output, "log.distill.csv"), "a") as f:
+        distll_log_path = "log.distill." + distill_model + ".csv"
+        with open(os.path.join(output, distll_log_path), "a") as f:
             print("KD run train")
             run_train_kd(
                 model,
@@ -238,11 +252,14 @@ def run(
                 data_dir,
                 output,
                 f,
+                distill_model,
             )
 
             # Load best weights
             if num_epochs != 0:
-                checkpoint = torch.load(os.path.join(output, "best.distill.pt"))
+                checkpoint = torch.load(
+                    os.path.join(output, "best.distill." + distill_model + ".pt")
+                )
                 student.load_state_dict(checkpoint["state_dict"])
                 f.write(
                     "Distill Best validation loss {} from epoch {}\n".format(

@@ -21,6 +21,7 @@ def run_train_kd(
     data_dir,
     output,
     f,
+    model_name,
 ):
     # Set up datasets and dataloaders
     dataset = {}
@@ -33,8 +34,8 @@ def run_train_kd(
         dataset["train"] = torch.utils.data.Subset(dataset["train"], indices)
     dataset["val"] = echonet.datasets.Echo(root=data_dir, split="val", **kwargs)
 
-    checkpoint_path = os.path.join(output, "checkpoint.distill.pt")
-    best_path = os.path.join(output, "best.distill.pt")
+    checkpoint_path = os.path.join(output, "checkpoint.distill." + model_name + ".pt")
+    best_path = os.path.join(output, "best.distill." + model_name + ".pt")
 
     # with open(os.path.join(output, "log.distill.csv"), "a") as f:
     epoch_resume = 0
