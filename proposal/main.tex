@@ -18,7 +18,15 @@
 % (Or just hit 'q' on the first LaTeX run, let it finish, and you should be clear).
 \definecolor{cvprblue}{rgb}{0.21,0.49,0.74}
 \definecolor{myblue}{rgb}{0.0,0.45,0.74}
-\usepackage[pagebackref,breaklinks,colorlinks,citecolor=cvprblue]{hyperref}
+% \usepackage[pagebackref,breaklinks,colorlinks,citecolor=cvprblue]{hyperref}
+\usepackage[hidelinks]{hyperref}
+
+% \usepackage{lipsum}% http://ctan.org/pkg/lipsum
+% \usepackage{multicol}% http://ctan.org/pkg/multicols
+% \usepackage{balance}
+
+\usepackage{graphicx}
+\graphicspath{ {./images/} }
 
 %%%%%%%%% PAPER ID  - PLEASE UPDATE
 \def\paperID{*****} % *** Enter the Paper ID here
@@ -47,7 +55,12 @@ ID: A20479715\\
 \input{sec/0_problem_desc}
 \input{sec/1_brief_survey}
 \input{sec/2_preliminary_plan}
-\input{sec/3_reference}
+\input{sec/3_description_dataset}
+\input{sec/4_workflow}
+\input{sec/5_development_training}
+\input{sec/6_evaluation}
+%\input{sec/7_statistical_analysis}
+\input{sec/9_reference}
 {
     \small
     \bibliographystyle{ieeenat_fullname}
